@@ -1,0 +1,218 @@
+\documentclass{beamer}
+
+%---------- 主题设置 ----------
+\usetheme{Berlin}               % 可选主题：Dresden, CambridgeUS, Malmoe…
+\usecolortheme{orchid}          % 可选配色：beaver, orchid, seagull…
+\setbeamertemplate{navigation symbols}{} % 隐藏导航图标
+
+%---------- 中文字体配置 ----------
+\usepackage[UTF8, fontset=mac]{ctex}
+
+%---------- 常用宏包 ----------
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{tikz}
+\usepackage{minted}
+\usepackage{changepage}
+\usepackage{graphbox}
+\usepackage{twemojis}
+\usepackage{relsize}
+\newcommand{\myemoji}[1]{\raisebox{-.2ex}{\twemoji[height=1.25\fontcharht\font`X]{#1}}}
+%---------- 自定义命令 ----------
+% C++ 符号宏，依赖 hyperref 和 relsize
+% 来自 GitHub 上的仓库 tcbrindle/wg21papertemplate 中的 ./common.tex 文件
+\newcommand{\Cpp}{\texorpdfstring{C\kern-0.05em\protect\raisebox{.35ex}{\textsmaller[2]{+\kern-0.05em+}}}{C++}}
+% 举例：让 \fdf 变成加粗显示
+\newcommand{\fdf}[1]{\alert{\textbf{#1}}}
+% 如果你只是想要一个空行，也可以用 \vspace{.5\baselineskip} 或者 \medskip
+\newcommand{\emptyline}{\vspace{.5\baselineskip}}
+
+
+% 用于数学公式中的自定义命令
+\newcommand{\nequiv}{\not\equiv} % 不同余
+\newcommand{\lcm}{\operatorname{lcm}} % 最小公倍数
+\newcommand{\lpd}{\operatorname{lpd}} % 最小素因数
+
+\title{最短路}
+\author{dbywsc}
+\date{2025/8}
+\begin{document}
+\frame{\titlepage}
+\begin{frame}
+	\frametitle{目录}
+	\tableofcontents
+\end{frame}
+\section{介绍}
+\begin{frame}
+最短路是非常常见的图论问题，分为\fdf{单源最短路径}和\fdf{多源最短路径}\\ 
+本节中的一些约定：\\ 
+$n$ 为图中点的数量， $m$ 为图中边的数量。\\ 
+$s$ 为最短路的源点。 \\ 
+$w(u, v)$ 为边 $(u, v)$ 的边权。\\ 
+$dis(u, v)$ 为点 $u$ 到 $v$ 最短路距离。
+常用的最短路算法有三种，本节将一一介绍。
+\end{frame}
+\section{Floyd}
+\begin{frame}
+Floyd是用来求任意两个节点直接的最短路算法。\\ 
+适用于有向图、无向图、负权图，但是前提是最短路必须存在\footnote{最短路存在的前提是不能有\fdf{负环}}。\\ 
+Floyd的实现使用了动态规划的思想，设 $f_{k, x, y}$ 为只允许经过点 $1$ 到 $k$ （其中不一定包括 $x$ 和 $y$），节点 $x$ 到 $y$ 之间到最短路长度。考虑如何状态转移，可以发现一共有两种情况，第一种情况是 $f_{k, x, y}$ 直接由 $f_{k - 1, x, y}$ 转移过来，也就是不走 $k$ 这个点；第二种情况是 $f_{k, x, y}$ 从 $f_{k - 1, x, k} + f_{k - 1, k, y}$ 转移过来，也就是先从 $x$ 走到 $k$ ，再从 $k$ 走到 $y$ ，我们每次在两者之间取一个最小值就好了。因此状态转移方程为：
+$$f_{k, x, y} = \min(f_{k - 1, x, y}, f_{k - 1, x, k} + f_{k - 1, k, y})$$
+接下来考虑边界，由于要求最小值，所以要初始化为最大值，但是当 $x = y$ 时，显然应该将距离初始化为 $0$ ；当存在一条权为 $w$ 的边 $x \rightarrow y$ 时，要让 $f_{0, x, y} = w$。
+\end{frame}
+\begin{frame}[fragile]
+\begin{onlyenv}
+\begin{minted}[fontsize = \scriptsize]{cpp}
+void solve(void) {
+    memset(f, 0x3f, sizeof(f));
+    int n, m; std::cin >> n >> m;
+    for(int i = 1; i <= m; i++) {
+        int u, v, w; std::cin >> u >> v >> w;
+        G[u][v] = G[v][u] = (G[u][v] ? std::min(G[u][v], w) : w);
+        f[0][u][v] = f[0][v][u] = std::min(f[0][u][v], w);
+    }
+    for(int k = 0; k <= n; k++)
+    for(int i = 1; i <= n; i++) f[k][i][i] = 0;
+    for(int k = 1; k <= n; k++) 
+        for(int x = 1; x <= n; x++) 
+            for(int y = 1; y <= n; y++) 
+                f[k][x][y] = std::min(f[k - 1][x][y], f[k - 1][x][k] + f[k - 1][k][y]);
+    for(int i = 1; i <= n; i++) {
+        for(int j = 1; j <= n; j++)
+            std::cout << f[n][i][j] << " ";
+        std::cout << "\n";
+    }
+}
+\end{minted}
+\end{onlyenv}
+floyd算法通常搭配邻接矩阵实现。上面的代码中，时空复杂度均为 $O(n^3)$
+\end{frame}
+\begin{frame}[fragile]
+考虑用滚动数组的方式优化，可以发现 $f$ 的第一维对结果没有影响，因此可以省去第一维：
+\begin{onlyenv}
+\begin{minted}[fontsize = \scriptsize]{cpp}
+for(int k = 1; k <= n; k++) {
+    for(int x = 1; x <= n; x++) {
+        for(int y = 1; y <= n; y++) {
+            f[x][y] = std::min(f[x][y], f[x][k] + f[k][y]);
+        }
+    }
+}
+\end{minted}
+\end{onlyenv}
+此时的时间复杂度为 $O(n^3)$ ，空间复杂度为 $O(n^2)$ 。
+\end{frame}
+\begin{frame}
+B3647 【模板】Floyd\\ 
+由于floyd的时空复杂度都很高，所以它只能处理点数比较小的图。此外，floyd常被用来求多源最短路、找最小环、封闭传包等问题。
+\end{frame}
+\section{Dijkstra}
+\begin{frame}
+Dijkstra是由Dijkstra\footnote{E.W.Dijkstra}发明的，一种用于求解\fdf{非负权图}上单源最短路径的算法。\\ 
+Dijkstra的流程如下：\\ 
+将图上所有的点分为两个点集：已经确定最短路的集合 $S$ 和还没有确定的集合 $T$ ，初始时，所有的点都属于 $T$ 。 \\ 
+初始化 $dis(s) = 0$ ，其他为极大值。\\ 
+然后重复地从 $T$ 中选取一个最短路长度最小的节点，移到 $S$ 中，并且对被刚刚加入 $S$ 的节点的所有出边进行\fdf{松弛}操作，直到 $T$ 为空。\\ 
+\end{frame}
+\begin{frame}
+松弛操作，即对于一条边 $(u, v)$ ，执行下面的式子：$dis(v) = \min(dis(v), dis(u) + w(u, v))$ 。\\
+这样做的含义即尝试用 $S \rightarrow u \rightarrow v$ （保证 $S \rightarrow u$ 已经是最短路）这条路径更新 $v$ 点的最短路，如果存在更优的方案，就进行更新。
+\end{frame}
+\begin{frame}
+可以发现，Dijkstra的实现瓶颈主要在于“寻找最短路中长度最小的点”。朴素的做法是在点集 $T$ 中通过枚举的方式暴力地找最小点，时间复杂度为 $O(n^2)$ ，这个效率我们无法接受\footnote{事实上，朴素的Dijkstra在稠密图中表现更优，但是我们一般不考虑}，因此在本节中，我们不会介绍朴素做法的实现。 \\ 
+考虑优化，可以发现，如果使用堆（即C++中的优先队列）来存放点集 $T$ ，可以保证堆顶一定最短路长度最小的点，此时我们将时间复杂度优化到了 $O(\log n)$ 。\\
+而“对 $S$ 的所有出边进行松弛操作”的时间复杂度为 $O(m)$ ，因此堆优化后的 $Dijkstra$ 时间复杂度为 $O(m \log n)$ 。
+\end{frame}
+\begin{frame}[fragile]
+P4779 【模板】单源最短路径（标准版）\\ 
+\begin{onlyenv}
+\begin{minted}[fontsize = \scriptsize]{cpp}
+void dijkstra(void) {
+    memset(dis, 0x3f, sizeof(dis));
+    dis[s] = 0;
+    std::priority_queue<PII, std::vector<PII>, std::greater<PII> > q;
+    q.push({0, s}); //由于pair默认按照first进行排序，所以我们先dis再v
+    while(q.size()) {
+        auto u = q.top().y; q.pop();
+        if(st[u]) continue;
+        st[u] = 1;
+        for(auto ed : G[u]) {
+            int v = ed.x, w = ed.y;
+            if(dis[v] > dis[u] + w) {
+                dis[v] = dis[u] + w;
+                q.push({dis[v], v});
+            }
+        }
+    }
+}
+\end{minted}
+\end{onlyenv}
+\end{frame}
+\begin{frame}
+可以发现，dijkstra本质上是一个特殊的BFS。
+直到现在，dijkstra仍然是最优秀的单源最短路算法，所以在处理最短路问题时，绝大部分问题都应该用dijkstra解决。\\ 
+但是，dijkstra无法处理负权图，此时应该使用别的算法。
+\end{frame}
+\section{SPFA}
+\begin{frame}
+SPFA是Bellman–Ford算法的一种实现\footnote{严格意义上来说，SPFA是朴素Bellman-Ford的队列优化，SPFA即Shortest Path Faster Algorithm}，在CNOI/CPC中，选手们更热衷于称其为“SPFA” 。\\
+SPFA同样是依赖于松弛操作的一种最短路算法，特点是能够处理负权图和判断是否存在最短路。\\ 
+SPFA的流程如下：
+将 $s$ 入队。 \\ 
+当队列不为空的时候，重复地对队首的点的出边进行松弛操作，同时将枚举到的新点入队。 \\ 
+直到队列为空。 \\
+最坏情况下，SPFA的时间复杂度是O(nm)。\\ 
+与Dijkstra不同的是，SPFA能够处理负权边，这就导致遇到负环时，SPFA会陷入死循环中，这个时候我们可以记录一下，如果SPFA已经松弛了 $m$ 条边后还在循环中，就可以确定遇到了负环，直接退出即可。
+\end{frame}
+\begin{frame}[fragile]
+P3371 【模板】单源最短路径（弱化版）\\ 
+\begin{onlyenv}
+\begin{minted}[fontsize = \scriptsize]{cpp}
+void spfa(void) {
+    memset(dis, 0x3f, sizeof(dis));
+    memset(cnt, 0, sizeof(cnt));
+    std::queue<int> q;
+    st[s] = 1; q.push(s); dis[s] = 0;
+    while(q.size()) {
+        auto u = q.front(); q.pop();
+        st[u] = 0;
+        for(auto ed : G[u]) {
+            if(dis[v] > dis[u] + w) {
+                dis[v] = dis[u] + w;
+                cnt[v] = cnt[u] + 1;
+                if(cnt[v] >= n) return;
+                if(!st[v]) {
+                    st[v] = 1; q.push(v);
+                }
+            }
+        }
+    }
+}
+\end{minted}
+\end{onlyenv}
+可以发现，SPFA其实也是一个特殊的BFS。
+\end{frame}
+\begin{frame}
+\begin{large}
+关于SPFA\\
+\end{large}
+\begin{small}
+它死了。\footnote{出自NOI 2018 Day1} \\ 
+\end{small}
+\\
+SPFA算法本身有许多潜在的问题，很容易被卡掉。因此在现代算法竞赛中，大部分非负权图的最短路问题都会卡SPFA。因此，在能够使用Dijkstra时务必要使用Dijkstra。当遇到负权图、存在负环的图、或者差分约束等Dijkstra无法解决的问题时，再考虑用SPFA解决。
+\end{frame}
+\section{习题}
+\begin{frame}
+由于最短路问题有非常多的扩展，因此本节的习题除了最短路的基础问题外，还有一些拓展性的问题。\\ 
+P2910	[USACO08OPEN] Clear And Present Danger S\\ 
+P3905	道路重建\\ 
+P1144	最短路计数\\ 
+P2136 拉近距离 \\
+P2446	[SDOI2010] 大陆争霸 \\
+P6175	无向图的最小环问题 \\
+P5837	[USACO19DEC] Milk Pumping G\\ 
+P3385	【模板】负环 \\ 
+P5960	【模板】差分约束
+\end{frame}
+\end{document}
