@@ -2,7 +2,7 @@
 
 > 基于 LaTeX Beamer 的算法教学幻灯片集  
 > **作者**：dbywsc  
-> **维护者**：dbywsc
+> **维护者**：dbywsc  
 > **主页**：[GitHub - dbywsc/AlgorithmPPT](https://github.com/dbywsc/AlgorithmPPT)
 
 ---
