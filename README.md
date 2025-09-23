@@ -44,8 +44,6 @@ AlgorithmPPT 是一套使用 LaTeX Beamer 制作的、面向高校与编程竞�
 - [Number-Theory-in-Competitive-Programming](https://github.com/GitPinkRabbit/Number-Theory-in-Competitive-Programming)
 - [讲解主定理的洛谷日报](https://www.luogu.com.cn/article/awubkrso)
 
-> **待改进**：主定理一节第一种情况公式的举例部分公式有误。
-
 ---
 
 ## 4. 使用方法
