@@ -1,0 +1,303 @@
+\documentclass{beamer}
+
+%---------- 主题设置 ----------
+\usetheme{Berlin}               % 可选主题：Dresden, CambridgeUS, Malmoe…
+\usecolortheme{orchid}          % 可选配色：beaver, orchid, seagull…
+\setbeamertemplate{navigation symbols}{} % 隐藏导航图标
+
+%---------- 中文字体配置 ----------
+\usepackage[UTF8, fontset=mac]{ctex}
+
+%---------- 常用宏包 ----------
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{tikz}
+\usepackage{tikz}
+\usepackage{minted}
+\usepackage{changepage}
+\usepackage{graphbox}
+\usepackage{twemojis}
+\usepackage{relsize}
+\newcommand{\myemoji}[1]{\raisebox{-.2ex}{\twemoji[height=1.25\fontcharht\font`X]{#1}}}
+%---------- 自定义命令 ----------
+% C++ 符号宏，依赖 hyperref 和 relsize
+% 来自 GitHub 上的仓库 tcbrindle/wg21papertemplate 中的 ./common.tex 文件
+\newcommand{\Cpp}{\texorpdfstring{C\kern-0.05em\protect\raisebox{.35ex}{\textsmaller[2]{+\kern-0.05em+}}}{C++}}
+% 举例：让 \fdf 变成加粗显示
+\newcommand{\fdf}[1]{\alert{\textbf{#1}}}
+% 如果你只是想要一个空行，也可以用 \vspace{.5\baselineskip} 或者 \medskip
+\newcommand{\emptyline}{\vspace{.5\baselineskip}}
+
+
+% 用于数学公式中的自定义命令
+\newcommand{\nequiv}{\not\equiv} % 不同余
+\newcommand{\lcm}{\operatorname{lcm}} % 最小公倍数
+\newcommand{\lpd}{\operatorname{lpd}} % 最小素因数
+
+\title{数论基础}
+\subtitle{本文部分内容引用并改编自小粉兔(@GitPinkRabbit)的开源项目：算法竞赛中的数论 – 系列课件}
+\date{2025/6/18}
+
+\begin{document}
+\frame{\titlepage}
+\begin{frame}
+  \frametitle{目录}
+  \tableofcontents
+\end{frame}
+
+\section{整除性}
+\begin{frame}
+    \frametitle{整除性}
+    \begin{definition}[整除、因数与倍数]
+        对于整数 $a, b$，且 $a \ne 0$，如果 \textcolor{blue}{$\frac{b}{a}$ 也是整数}，则称 \fdf{$b$ 被 $a$ 整除}，或称 \fdf{$a$ 整除 $b$}，记作 \fdf{$a \mid b$}，否则称 $a$ 不整除 $b$，记作 \fdf{$a \nmid b$}。
+   
+        若 $a$ 整除 $b$，也称 $b$ 是 $a$ 的\fdf{倍数}，$a$ 是 $b$ 的\fdf{因数（约数）}。
+    
+        \emptyline
+    
+        \uncover<2>{
+            同时，我们\alert{约定} $0$ 整除 $0$，但不整除其他任何整数。
+      
+            即 $0 \mid 0$，但是对于所有 $n \ne 0$ 均有 $0 \nmid n$。
+        }
+    \end{definition}
+\end{frame}
+
+\begin{frame}
+  \frametitle{整除性 -- 例子}
+  
+  \only<1-3>{
+    \begin{examples}[整除性]
+      \begin{itemize}
+        \item<2-> $\phantom{-}2$ \hspace{1em}整除 $\phantom{-}6$，因为 $\frac{6}{2} = 3$ 是整数。
+        \item<2-> $-6$ \hspace{1em}整除 $\phantom{-}6$，因为 $\frac{6}{-6} = -1$ 是整数。
+        \item<2-> $\phantom{-}5$ \hspace{1em}整除 $\phantom{-}0$，因为 $\frac{0}{5} = 0$ 是整数。
+        \item<2-> $-4$ 不整除 $-6$，因为 $\frac{-6}{-4} = 1.5$ 不是整数。
+        \item<3 > $\phantom{-}0$ \hspace{1em}整除 $\phantom{-}0$，因为我们约定如此。
+        \item<3 > $\phantom{-}0$ 不整除 $-7$，因为我们约定如此。
+      \end{itemize}
+    \end{examples}
+  }
+  
+  \only<4-6>{
+    \begin{examples}[因数与倍数]
+      \begin{itemize}
+        \item<5-> 所以 $\phantom{-}6$ \hspace{1em}是 $\phantom{-}2$ 的倍数，$\phantom{-}2$ \hspace{1em}是 $\phantom{-}6$ 的因数。
+        \item<5-> \-\hspace{2em} $\phantom{-}6$ \hspace{1em}是 $-6$ 的倍数，$-6$ \hspace{1em}是 $\phantom{-}6$ 的因数。
+        \item<5-> \-\hspace{2em} $\phantom{-}0$ \hspace{1em}是 $\phantom{-}5$ 的倍数，$\phantom{-}5$ \hspace{1em}是 $\phantom{-}0$ 的因数。
+        \item<5-> \-\hspace{2em} $-6$ 不是 $-4$ 的倍数，$-4$ 不是 $-6$ 的因数。
+        \item<6 > \-\hspace{2em} $\phantom{-}0$ \hspace{1em}是 $\phantom{-}0$ 的倍数，$\phantom{-}0$ \hspace{1em}是 $\phantom{-}0$ 的因数。
+        \item<6 > \-\hspace{2em} $-7$ 不是 $\phantom{-}0$ 的倍数，$\phantom{-}0$ 不是 $-7$ 的因数。
+      \end{itemize}
+    \end{examples}
+  }
+\end{frame}
+\begin{frame}
+  \frametitle{整除性 -- 简单规律}
+  
+  关于整除的一些简单规律：
+  
+  \begin{itemize}
+    \item<2-> $1$ 和 $-1$ 整除所有整数。\\
+      $1$ 和 $-1$ 是所有整数的因数，所有整数是 $1$ 和 $-1$ 的倍数。
+    \item<3-> 所有整数整除 $0$。\\
+      $0$ 是所有整数的倍数，所有整数是 $0$ 的因数。
+    \item<4-> 对于正整数 $a$，$a$ 是 $a$ 的最大因数，也是 $a$ 的最小正倍数。\\
+      并且，$-a$ 是 $a$ 的最小因数，也是 $a$ 的最大负倍数。
+  \end{itemize}
+  
+  \uncover<5>{
+    一般地，对于任意整数 $a$，一定有 $1, -1, a, -a$ 是 $a$ 的因数，\\
+    \-\hspace{10em}\hphantom{ $a$}也一定有 $\phantom{0, -{}}0, a, -a$ 是 $a$ 的倍数。
+    
+    对于非 $0$ 整数 $a$，称 $1, -1, a, -a$ 为 $a$ 的\fdf{平凡因数}。
+  }
+\end{frame}
+\section{余数}
+\begin{frame}
+\frametitle{带余除法}
+\begin{definition}[有余数的除法]
+    对于整数 $a$ 和正整数 $m$，存在且仅存在一对整数 $\langle q, r \rangle$ 满足%
+    %
+    \begin{center}
+      $a = q \cdot m + r$ 且 $0 \le r < m$，
+    \end{center}%
+    %
+    称 $a$ 除以 $m$ 的\hspace{.5em}\fdf{商}\hspace{.5em}为 $q$，\\
+    \-\hspace{1em} $a$ 除以 $m$ 的\fdf{余数}为 $r$。
+    
+    记作 $a \div m = q \cdots \cdots r$。
+  \end{definition}
+  
+  \pause
+  \emptyline
+  在计算上，很简单地有 $q = \big\lfloor \frac{a}{m} \big\rfloor$ 和 $r = a - q \cdot m = a - \big\lfloor \frac{a}{m} \big\rfloor \cdot m$。\\
+  这里 $\lfloor x \rfloor$ 指向下取整，例如 $\lfloor 3.8 \rfloor = 3$、$\lfloor -4.2 \rfloor = -5$、$\lfloor 7 \rfloor = 7$、$\lfloor -9 \rfloor = -9$。
+\end{frame}
+\begin{frame}
+  \frametitle{有余数的除法 -- 例子}
+  
+  \begin{examples}[有余数的除法]
+    \begin{itemize}
+      \item $8$ 除以 $3$ 的商为 $2$，余数为 $2$。\\
+        因为 $2 \times 3 + 2 = 8$，且 $0 \le 2 < 3$。
+      \item $-9$ 除以 $5$ 的商为 $-2$，余数为 $1$。\\
+        因为 $(-2) \times 5 + 1 = -9$，且 $0 \le 1 < 5$。
+      \item $-12$ 除以 $4$ 的商为 $-3$，余数为 $0$。\\
+        因为 $(-3) \times 4 + 0 = -12$，且 $0 \le 0 < 4$。
+      \item ${10}^6$ 除以 $7$ 的商为 $142857$，余数为 $1$。\\
+        因为 $142857 \times 7 + 1 = {10}^6$，且 $0 \le 1 < 7$。
+    \end{itemize}
+  \end{examples}
+  
+  \uncover<2>{注意到，如果 $a$ 除以 $m$ 的余数为 $0$，则 $m \mid a$，否则 $m \nmid a$。}
+\end{frame}
+
+\begin{frame}
+  \frametitle{\Cpp{} 中的除法和求余运算符}
+  
+  \only<1>{
+    在 \Cpp{} 中，提供了除法运算符“\texttt{/}”和求余运算符“\texttt{\%}”以支持 \Cpp{} 程序进行相关计算。它们的形式为：
+    
+    \begin{itemize}
+      \item “\texttt{\textcolor{darkgray}{左操作数} / \textcolor{darkgray}{右操作数}}”，
+      \item “\texttt{\textcolor{darkgray}{左操作数} \% \textcolor{darkgray}{右操作数}}”。
+    \end{itemize}
+    
+    这里我们针对两操作数均拥有整数类型或无作用域枚举类型的情况进行说明。假设两操作数已进行过整型提升和整型转换，并产生为 \texttt{int} 或 \texttt{long long} 及其无符号（\texttt{unsigned}）版本之一的公共类型。
+  }
+  
+  \only<2-4>{
+    从 \Cpp{}11 标准开始，规定了除法运算符的舍入方向：运算结果为第一操作数除以第二操作数的数值结果\alert{向零舍入}得到的整数。
+    
+    这意味着，如果数值结果 $> 0$，则运算结果 $\le$ 数值结果，\\
+    \-\hspace{5em}如果数值结果 $< 0$，则运算结果 $\ge$ 数值结果，\\
+    \-\hspace{5em}如果数值结果 $= 0$，则运算结果 $=$ 数值结果 $= 0$。
+    
+    \uncover<3->{
+      \emptyline
+      
+      注意，\Cpp{} 中除法和求余运算符的第二操作数均可以为负数，这与前文中“有余数的除法”不同。
+    }
+    
+    \uncover<4>{
+      \emptyline
+      
+      特别地，如果第二操作数为 $0$，则行为未定义（UB）。典型的编译器实现可能导致运行时错误（RE）。
+      
+      若运算结果不能以结果类型表示，则行为未定义。
+    }
+  }
+\end{frame}
+\begin{frame}
+  \frametitle{\Cpp{} 中的除法和求余运算符 -- 求余运算符例子}
+  
+  \begin{examples}[求余运算符]
+    \begin{itemize}
+      \item<2-> \texttt{ 5 \% \ 3} 的结果为 \texttt{ 2}。
+      \item<2-> \texttt{ 5 \% -3} 的结果为 \texttt{ 2}。
+      \item<2-> \texttt{-5 \% \ 3} 的结果为 \texttt{-2}。
+      \item<2-> \texttt{-5 \% -3} 的结果为 \texttt{-2}。
+      \item<3-> \texttt{-7 \% \ 0} 是未定义行为。
+      \item<3-> \texttt{ 0 \% \ 0} 是未定义行为。
+      \item<4-> \texttt{(int)(-2147483648LL) \% -1} 是未定义行为（补码系统上）。
+    \end{itemize}
+  \end{examples}
+\end{frame}
+
+\begin{frame}
+  \frametitle{\Cpp{} 中的除法和求余运算符 -- 正负性提示}
+  
+  假设 $a \mathbin{\texttt{/}} m = q$ 和 $a \mathbin{\texttt{\%}} m = r$。
+  
+  则有 $q$ 的正负性与 $a \cdot m$ 的正负性相同，\\
+  \-\hspace{2em} $r$ 的正负性与 $a$ 的正负性相同。
+  
+  \emptyline
+  
+  \uncover<2>{在操作数可能为负数或 $0$ 时，需要特别注意。}
+\end{frame}
+\begin{frame}[fragile]
+  \frametitle{一些常用公式 -- 1}
+  对于 $(a \pm b) \mod c$ ，等价于 $((a \mod c) \pm (b \mod c)) \mod c$ 。
+  一个例子：计算斐波那契数列的第 $n (1\le n\le 10^5)$ 项，由于这个数字可能非常大，所以输出其对 $998244353$ 取模的结果。
+
+  \begin{minted}[fontsize=\scriptsize]{cpp}
+const int P = 998244353;
+int f[N], s[N];
+int calc(int n) {
+    f[1] = f[2] = 1;
+    for(int i = 3; i <= n; i++) {
+        f[i] = (f[i - 1] + f[i - 2]) % P;
+    }
+    return f[n] % P;
+}
+  \end{minted}
+\end{frame}
+\begin{frame}
+    \frametitle{一些常用公式 -- 2}
+    有时，将 $(a - b) \mod c$ 的结果使用 $(a \mod c - b \mod c) \mod c$ 的方式计算会出现负数，例如：\\
+    $a = 14, b = 9, c = 6$ 时， $(a - b) \mod c = 5 \mod 6 = 5$ ，\\
+    但是 $(a \mod c - b \mod c) \mod c = (14 \mod 6 - 9 \mod 6) \mod 6 = (2 - 3) \mod 6 = -1$ 。\\
+    要想保证结果正确，我们可以在做类似计算的时候在先 $+c$ 在 $\mod c$ ，也就是：\\
+    $(a \mod c - b \mod c + c) \mod c$ ，可以保证最后的结果一定是数学意义上我们期望的余数。\\
+    由于大家目前的数论知识不足以证明这个操作，因此我们在这里不予证明。
+\end{frame}
+\begin{frame}[fragile]
+  \frametitle{一些常用公式 -- 3}
+  对于 $(a \times b) \mod c$ ，等价于 $((a \mod c) \times (b \mod c)) \mod c$ 。
+  一个例子：计算 $n (1\le n\le 1000)$ 的阶乘，由于这个数字可能非常大，所以输出其对 $998244353$ 取模的结果。
+
+  \begin{minted}[fontsize=\scriptsize]{cpp}
+const int P = 998244353;
+int fac[N];
+int calc(int n) {
+    fac[1] = 1;
+    for(int i = 2; i <= n; i++) {
+        fac[i] = (i * fac[i - 1]) % P;
+    }
+    return fac[n] % P;
+}
+  \end{minted}
+\end{frame}
+\section{质数}
+\begin{frame}
+\frametitle{质数的定义}
+一个数的因数如果只有\fdf{$1$}和\fdf{它本身}，那么我们称这个数是\fdf{质数}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{试除法判断质数 -- 1}
+\fdf{试除法}是判断质数的一种最简单的算法。
+  试除法枚举所有在 $2$ 到 $n - 1$ 之间的整数 $d$ ，并通过计算 $n \bmod d$ 是否为 $0$ 判断 $d$ 是否为 $n$ 的因数。如果 $n \ne 1$ 并且不存在这样的因数，则可以确认 $n$ 是素数。
+\begin{onlyenv}
+\begin{minted}[fontsize = \scriptsize]{cpp}
+bool check(int n) {
+    if(n == 1) return false;
+    for(int i = 2; i < n; i++) {
+        if(n % i == 0) return false;
+    }
+    return true;
+}
+\end{minted}
+\end{onlyenv}
+  时间复杂度 $O(n)$
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{试除法判断质数 -- 2}
+定理：如果 $n$ 拥有非平凡因数，则其最小非平凡正因数 $\le \sqrt{n}$。
+\fdf{试除法}是判断质数的一种最简单的算法。
+  试除法枚举所有在 $2$ 到 $\lfloor \sqrt n \rfloor$ 之间的整数 $d$ ，并通过计算 $n \bmod d$ 是否为 $0$ 判断 $d$ 是否为 $n$ 的因数。如果 $n \ne 1$ 并且不存在这样的因数，则可以确认 $n$ 是素数。
+    \begin{onlyenv}
+\begin{minted}[fontsize = \scriptsize]{cpp}
+bool check(int n) {
+    if(n == 1) return false;
+    for(int i = 2; i * i <= n; i++) {
+        if(n % i == 0) return false;
+    }
+    return true;
+}
+\end{minted}
+时间复杂度 $O(\sqrt n)$
+  \end{onlyenv}
+\end{frame}
+\end{document}

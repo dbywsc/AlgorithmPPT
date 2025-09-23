@@ -1,0 +1,161 @@
+\documentclass{beamer}
+
+%---------- 主题设置 ----------
+\usetheme{Berlin}               % 可选主题：Dresden, CambridgeUS, Malmoe…
+\usecolortheme{orchid}          % 可选配色：beaver, orchid, seagull…
+\setbeamertemplate{navigation symbols}{} % 隐藏导航图标
+
+%---------- 中文字体配置 ----------
+\usepackage[UTF8, fontset=mac]{ctex}
+
+%---------- 常用宏包 ----------
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{tikz}
+\usepackage{minted}
+\usepackage{changepage}
+\usepackage{graphbox}
+\usepackage{twemojis}
+\usepackage{relsize}
+\newcommand{\myemoji}[1]{\raisebox{-.2ex}{\twemoji[height=1.25\fontcharht\font`X]{#1}}}
+%---------- 自定义命令 ----------
+% C++ 符号宏，依赖 hyperref 和 relsize
+% 来自 GitHub 上的仓库 tcbrindle/wg21papertemplate 中的 ./common.tex 文件
+\newcommand{\Cpp}{\texorpdfstring{C\kern-0.05em\protect\raisebox{.35ex}{\textsmaller[2]{+\kern-0.05em+}}}{C++}}
+% 举例：让 \fdf 变成加粗显示
+\newcommand{\fdf}[1]{\alert{\textbf{#1}}}
+% 如果你只是想要一个空行，也可以用 \vspace{.5\baselineskip} 或者 \medskip
+\newcommand{\emptyline}{\vspace{.5\baselineskip}}
+
+
+% 用于数学公式中的自定义命令
+\newcommand{\nequiv}{\not\equiv} % 不同余
+\newcommand{\lcm}{\operatorname{lcm}} % 最小公倍数
+\newcommand{\lpd}{\operatorname{lpd}} % 最小素因数
+
+\title{递归时间复杂度分析}
+\author{dbywsc}
+\date{2025/8}
+\begin{document}
+\frame{\titlepage}
+\begin{frame}
+	\frametitle{目录}
+	\tableofcontents
+\end{frame}
+\section{一些符号}
+\begin{frame}[fragile]
+在之前的学习中，我们已经学会了使用大 $O$ 符号分析时间复杂度，比如：
+\begin{onlyenv}
+\begin{minted}[fontsize = \scriptsize]{cpp}
+    for(int i = 1; i <= n; i++) {
+        for(int j = 1; j <= m; j++) {
+            ans += a[i][j];
+        }
+    }
+\end{minted}
+\end{onlyenv}
+在上面的代码中，ans += a[i][j] 会执行 $n \times m$ 次，因此我们称其时间复杂度为 $O(nm)$ 。
+当一段代码执行的次数类似于 $an^3 + bn^2 + cn + T$ 时，我们将其时间复杂度记做 $O(n^3)$ 。
+事实上，我们使用的符号 $O$ 在复杂度分析中称之为 \fdf{大O表示法} (big-oh)，这种忽略低次项、常数项和系数的时间复杂度叫 \fdf{渐进时间复杂度} 。
+\end{frame}
+\begin{frame}
+除了big-oh之外，时间复杂度还有其他的表示符号。\\
+设一段代码执行的严格时间为 $T(n)$ ，则有以下符号：\\
+$\Theta(n)$ ：读作 theta，用这种符号最精确的时间复杂度，即 $\Theta(n) = T(n)$ 。 \\ 
+$O(n)$ ：读作 big-oh，使用这种方法表示“小于等于”，即 $O(n) \leq T(n)$ 。 \\ 
+$o(n)$ ：读作 small-oh，使用这种方法表示 “小于”，即 $o(n) < T(n)$ 。 \\ 
+$\Omega(n)$ ： 读作 big-omega，使用这种方法表示 “大于等于”，即 $\Omega(n) \geq T(n)$ 。 \\ 
+$\omega(n)$ ： 读作 small-omega，使用这种方法表示 “大于”， 即 $\omega(n) > T(n)$ 。
+在实际做题中，我们常用 $O(n)$ 估计时间；而在理论分析中，我们常用 $\Theta(n)$ 和 $O(n)$ 两种符号。
+\end{frame}
+\section{对数的基本运算}
+\begin{frame}
+在讲解递归时间复杂度之前，我们需要先熟悉一下对数的使用。
+设 $a^b = N$ ，那么我们可以把这个式子写成 $\log_{a}N = b$ 。
+可以发现，形如 $f(x) = \log_a x$ 与 $g(x) = a^x$ ，当二者的 $a$ 相等时 $f(x)$ 和 $g(x)$ 是互逆的，我们称 $f(x)$ 和 $g(x)$ 互为 \fdf{反函数} 。
+下面列出几个常用的对数：\\
+以 $10$ 为底的对数称之为 “常用对数”，记做 $\lg x$ 。\\
+以 $e$\footnote{即欧拉常数，约等于 $2.71828182846$} 的对数称之为自然对数，记做 $\ln x$。\\
+以 $2$ 为底的对数在算法竞赛中也很常用，\fdf{本节中简写为} $\log x$ 。
+\end{frame}
+\begin{frame}
+下面是一些对数运算的法则：\\
+$\log_a x + \log_a y = \log_a (xy)$  \\ 
+$\log_a x - \log_a y = \log_ (\frac{x}{y})$ \\ 
+$\log_a x^y = y \log_a x$ \\ 
+$a^{\log_a b} = b$  \\ 
+\end{frame}
+\section{主定理}
+\begin{frame}
+在分析递归程序的时间复杂度时，常使用\fdf{主定理}(Master Theorem) 。 \\ 
+设一个递归程序执行的时间为 $T(n)$ ，我们在递归的过程中，讲这个问题分治为了 $a$ 个规模为 $\frac{n}{b}$ 的子问题，每次递归额外带来的计算为 $f(n)$ ，即：
+$$T(n) = a T(\frac{n}{b}) + f(n)$$
+那么存在以下关系\footnote{严格来说本节主定理描述其实并不准确。在第二种情况和第三种情况中，遇到临界情况时需要额外判断。本节忽略了这一点，但不影响做初赛的题目。}：
+$$T(n)  =  \left\{\begin{array}{ll}
+\Theta(n^{\log_b a}) & f(n)  =  O(n^{\log_b (a) - \epsilon}) \ \  \epsilon > 0 \\
+\Theta(f(n)) & f(n) = \Omega(n^{\log_b (a) + \epsilon}) \ \ \epsilon > 0 \\
+\Theta(n^{\log_b a} \log ^{k + 1} n) & f(n) = \Theta(n^{\log_b a}\log^k n) \ \ k \geq 0
+\end{array}\right.$$
+其中， $\epsilon$ 是常数。
+\end{frame}
+\begin{frame}
+第一种情况：当 $f(n) = O(n^{\log_b(a) - \epsilon})$ 时， $T(n) = \Theta(n^log_b a)$ 。 \\ 
+e.g
+$$T(n) = 2T(\frac{n}{2}) + \sqrt(n)$$
+$a = 2, b = 2, log_b a = 1, f(n) = n^{\frac{1}{2}}$ \\
+$f(n) = n^{\frac{1}{2}} = n^{\log_b a - \frac{1}{2}}$ 。取 $\epsilon = \frac{1}{2}$ ，可得 $T(n) = \Theta(n)$
+\end{frame}
+\begin{frame}
+第二种情况：当 $f(n) = \Omega(\log_b(a) + epsilon)$ 时， $T(n) = \Theta(f(n))$ 。 \\ 
+e.g
+$$T(n) = 2T(\frac{n}{2}) + n^2$$
+$a = b = 2, \log_b a = 1, f(n) = n^2$ \\ 
+$f(n) = n^2 = n^{\log_b a + 1}$ ，取 $\epsilon = 1$ ，可得 $T(n) = \Theta(n^2)$
+\end{frame}
+\begin{frame}
+第三种情况：当 $f(n) = \Theta(n^{\log_b a} \log^k n)$ 时， $T(n) = \Theta(n{\log_b a} \log^{k + 1} n))$ 。\\ 
+e.g
+$$T(n) = 2T(\frac{n}{2}) + n$$
+$$a = b = 2, \log_b a = 1, f(n) = n$$ \\ 
+当 $k = 0$ 时： $f(n) = n = n^{\log_b a} \times \log^0n$ ，可得 $T(n) = \Theta(n^{\log_b a} \log^{0 + 1} n) = n\log n$ 。
+\end{frame}
+\section{初赛题目选讲}
+\begin{frame}
+NOIP 2016 提高组 选择题第14题：\\ 
+假设某算法的计算时间表达式为递推关系式：
+$$T(n) = 2T(\frac{n}{4}) + \sqrt(n)$$
+$$T(1) = 1$$
+求算法时间复杂度。 \\ 
+由主定理得， $a = 2, b = 4, \log_b a = \frac{1}{2}, f(n) = n^{\frac{1}{2}}$ 。 \\
+根据第三种情况，取 $k = 0$ 时， $f(n) = n^{\log_b a} \times \log^0 n$ ，因此 $T(n) = \Theta(n^{\log_b a} \log^{0 + 1}n) = \Theta(n^{\frac{1}{2}} \log n)$\footnote{在初赛的选择题中，选项有时用big-oh表示法，此时如果同时存在big-oh和Theta取更精确的Theta，如果只有big-oh取big-oh即可} 。 
+\end{frame}
+\begin{frame}
+NOIP 2015 提高组 选择题第十题：\\ 
+假设某算法的计算时间表达式为递推关系式：\\ 
+$$T(n) = T(n - 1) + n \ (n \in \mathbb{N}^*)$$
+$$T(0) = 1$$
+求算法时间复杂度。
+这个问题不需要主定理，直接计算即可。
+$$T(n) = T(n - 1) + n = T(n - 2) + (n - 1) + n$$
+$$= T(n - 3) + (n - 2) + (n - 1) + n = ... $$
+$$= T(0) + 1 + 2 + ... + (n - 1) + n$$
+$$= 1 + \frac{n(n + 1)}{2}$$
+如果取Theta，则 $T(n) = \Theta(1 + \frac{n(n + 1)}{2})$，如果取 big-oh ，那么渐进时间复杂度为 $O(n^2)$ 。
+\end{frame}
+\begin{frame}[fragile]
+NOIP 2013 提高组 选择题第七题：
+斐波那契数列的定义如下：
+$$F_1 = F_2 = 1， F_n = F_{n - 2} + F_{n - 1} / (n \geq 3)$$
+问用下面方式计算 $F_n$ 的时间复杂度是多少：
+\begin{onlyenv}
+\begin{minted}[fontsize = \scriptsize]{cpp}
+int F(int n) {
+    if(n <= 2) return 1;
+    return F(n - 1) + F(n - 2);
+}
+\end{minted}
+\end{onlyenv}
+A. $O(1)$ ， B. $O(n)$ ，C. $O(n^2)$ D. $O(F_n)$ \\
+本题仅仅要求我们求出渐进时间复杂度，显然，计算任何一项的复杂度都不会超过 $F_n$ ，因此复杂度最大的项就是计算 $F_n$ 的复杂度，因此选D。
+\end{frame}
+\end{document}
